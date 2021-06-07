@@ -28,7 +28,7 @@ const (
 	password  = "pinkel"
 	hostname  = "127.0.0.1:3306"
 	dbname    = "newDatabase"
-	tableName = "postsTable4"
+	tableName = "postsTable6"
 )
 
 func dsn(dsnDbName string) string {
@@ -105,13 +105,9 @@ func connectToDB(targetDbName string) {
 
 }
 func queryDBnStuff(theDB *sql.DB, targetDbName string) {
-	//	insert, err := db.Query("INSERT INTO " + booksie + " VALUES('My post')")
 
 	//*
-	//	query := fmt.Sprintf("CREATE TABLE %s (`id` int(6) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(30) NOT NULL, `city` varchar(30) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", tableName)
-	//	query := fmt.Sprintf("CREATE TABLE %s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`ID`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", "json:\"id\"", "json:\"title\"", tableName)
-	//	query := fmt.Sprintf("CREATE TABLE %s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", "id", "title", tableName, "id")
-	//	query := fmt.Sprintf("CREATE TABLE %s (`%s` int(6) unsigned NOT NULL, `%s` varchar(30) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=latin1;", tableName, "json:\"id\"", "json:\"title\"")
+	//	query := fmt.Sprintf("CREATE TABLE %s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", tableName, "json:\"id\"", "json:\"title\"", "json:\"id\"")
 	query := fmt.Sprintf("CREATE TABLE %s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", tableName, "id", "title", "id")
 	/*/
 	query := fmt.Sprintf("INSERT INTO %s VALUES('1', 'Merkel', 'Ghostbusters')", tableName)
@@ -128,6 +124,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var posts []Post
 	result, err := db.Query("SELECT id, title from " + tableName)
+	//result, err := db.Query("SELECT json:\"id\", title from " + tableName)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -141,11 +138,12 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		posts = append(posts, post)
 	}
 	json.NewEncoder(w).Encode(posts)
+	log.Printf("got posts\n")
 }
 func createPost(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Creating post\n")
+	//	log.Printf("Creating post\n")
 	w.Header().Set("Content-Type", "application/json")
-	log.Printf("Preparing DB\n")
+	//	log.Printf("Preparing DB\n")
 	stmt, err := db.Prepare("INSERT INTO " + tableName + "(title) VALUES(?)")
 	if err != nil {
 		panic(err.Error())
@@ -163,11 +161,12 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 	fmt.Fprintf(w, "New post was created")
+	log.Printf("created post\n")
 }
 func getPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	result, err := db.Query("SELECT id, title FROM posts WHERE id = ?", params["id"])
+	result, err := db.Query("SELECT id, title FROM "+tableName+" WHERE id = ?", params["id"])
 	if err != nil {
 		panic(err.Error())
 	}
@@ -180,6 +179,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.NewEncoder(w).Encode(post)
+	log.Printf("got post\n")
 }
 func updatePost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -200,6 +200,7 @@ func updatePost(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 	fmt.Fprintf(w, "Post with ID = %s was updated", params["id"])
+	log.Printf("updated post\n")
 }
 func deletePost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -213,4 +214,5 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 	fmt.Fprintf(w, "Post with ID = %s was deleted", params["id"])
+	log.Printf("deleted post\n")
 }
