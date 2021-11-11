@@ -1,4 +1,4 @@
-package main
+package main2
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var port = 8087
+var portnumber = 8087
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/hello" {
@@ -31,7 +31,7 @@ func main() {
 	http.HandleFunc("/hello", helloHandler)
 
 	fmt.Printf("Starting server at port %d\n", port)
-	if err := http.ListenAndServe(string(":"+strconv.Itoa(port)), nil); err != nil {
+	if err := http.ListenAndServe(string(":"+strconv.Itoa(portnumber)), nil); err != nil {
 		log.Fatal(err)
 	}
 }

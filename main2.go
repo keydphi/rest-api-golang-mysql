@@ -1,4 +1,4 @@
-package main
+package main2
 
 import (
 	"context"
@@ -27,8 +27,7 @@ var err error
 const (
 	username  = "paulo"
 	password  = "pinkel"
-	hostname  = "127.0.0.1"
-	port      = "3306"
+	hostname  = "127.0.0.1:3306"
 	dbname    = "neueDatabase"
 	tablename = "postsTable17"
 )
@@ -82,7 +81,7 @@ func runAPI() {
 	router.HandleFunc("/posts/{id}", getPost).Methods("GET")
 	router.HandleFunc("/posts/{id}", updatePost).Methods("PUT")
 	router.HandleFunc("/posts/{id}", deletePost).Methods("DELETE")
-	http.ListenAndServe(":"+string(port), router)
+	http.ListenAndServe(":8000", router)
 	log.Printf("API open and running\n")
 
 }
