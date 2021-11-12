@@ -30,20 +30,21 @@ const (
 	hostname  = "127.0.0.1"
 	port      = "3306"
 	dbname    = "neueDatabase"
-	tablename = "postsTable17"
+	tablename = "postsTable11"
 )
 
 func main() {
+	/*
+		db, err = sql.Open("mysql", get_dsn(""))
+		if err != nil {
+			panic(err.Error())
+		}
+		defer db.Close()
+		log.Printf("Opened mysql DSN successfully\n")
 
-	db, err = sql.Open("mysql", get_dsn(""))
-	if err != nil {
-		panic(err.Error())
-	}
-	defer db.Close()
-	log.Printf("Opened mysql DSN successfully\n")
-
+	*/
 	connectToDB()
-	//createTableIfNotExists()
+	createTableIfNotExists()
 
 	/*
 		query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s.%s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", dbname, tablename, "id", "title", "id")
@@ -90,29 +91,29 @@ func runAPI() {
 // func connectToDB(targetDbName string) {
 func connectToDB() {
 	/*
-			db, err = sql.Open("mysql", get_dsn(""))
-			if err != nil {
-				log.Printf("Error %s when opening DB %S", err, targetDbName)
-				return
-			}
-			contexti, cnclfnc := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cnclfnc()
-			//	perms, err := db.ExecContext(ctx, "GRANT ALL ON '"+targetDbName+"' TO '"+username+"'@'localhost';")
-			perms, err := db.ExecContext(contexti, "GRANT ALL PRIVILEGES ON *.* TO '"+username+"'@'localhost' IDENTIFIED BY '"+password+"';")
-			if err != nil {
-				log.Printf("Error %s when granting user permissions to %s on localhost\n", err, username)
-				return
-			}
-			log.Printf("permissions granted for %d\n", perms)
-			db.Close()
-
-		//	db, err = sql.Open("mysql", get_dsn(targetDbName))
 		db, err = sql.Open("mysql", get_dsn(""))
 		if err != nil {
-			log.Printf("Error %s when opening mysql dsn", err)
+			log.Printf("Error %s when opening DB %S", err, targetDbName)
 			return
 		}
+		contexti, cnclfnc := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cnclfnc()
+		//	perms, err := db.ExecContext(ctx, "GRANT ALL ON '"+targetDbName+"' TO '"+username+"'@'localhost';")
+		perms, err := db.ExecContext(contexti, "GRANT ALL PRIVILEGES ON *.* TO '"+username+"'@'localhost' IDENTIFIED BY '"+password+"';")
+		if err != nil {
+			log.Printf("Error %s when granting user permissions to %s on localhost\n", err, username)
+			return
+		}
+		log.Printf("permissions granted for %d\n", perms)
+		db.Close()
+
 	*/
+	db, err = sql.Open("mysql", get_dsn(dbname))
+	// db, err = sql.Open("mysql", get_dsn(""))
+	if err != nil {
+		log.Printf("Error %s when opening mysql dsn", err)
+		return
+	}
 
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
@@ -129,6 +130,32 @@ func connectToDB() {
 		//		return
 	}
 	log.Printf("rows affected %d\n", no)
+
+	res2, err := db.ExecContext(ctx, "USE "+dbname+";")
+	if err != nil {
+		log.Printf("Error %s when setting USE DB "+dbname+"\n", err)
+		return
+	}
+
+	no2, err := res2.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when fetching rows", err)
+		//		return
+	}
+	log.Printf("rows affected %d\n", no2)
+
+	res3, err := db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON "+dbname+"."+tablename+" TO '"+username+"'@'"+hostname+"';")
+	if err != nil {
+		log.Printf("Error %s when granting privileges\n", err)
+		return
+	}
+
+	no3, err := res3.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when fetching rows", err)
+		//		return
+	}
+	log.Printf("rows affected %d\n", no3)
 
 	db.Close()
 
@@ -155,12 +182,13 @@ func connectToDB() {
 }
 
 func get_dsn(dsnDbName string) string {
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s", username, password, hostname, dsnDbName)
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dsnDbName)
 }
 
 func createTableIfNotExists() {
 
 	//	query := fmt.Sprintf("CREATE TABLE %s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", tableName, "json:\"id\"", "json:\"title\"", "json:\"id\"")
+	// query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s.%s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", dbname, tablename, "json:\"id\"", "json:\"title\"", "json:\"id\"")
 	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s.%s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", dbname, tablename, "id", "title", "id")
 	insert, err := db.Query(query)
 	if err != nil {
@@ -170,15 +198,15 @@ func createTableIfNotExists() {
 	log.Printf("Executed query %s to table %s successfully\n", query, tablename)
 }
 
-func insertTestValuesIntoTable(theDB *sql.DB, targetDbName string, newTableName string) {
+func insertTestValuesIntoTable(theDB *sql.DB) {
 
-	query := fmt.Sprintf("INSERT INTO %s VALUES('1', 'Merkel', 'Ghostbusters')", newTableName)
+	query := fmt.Sprintf("INSERT INTO %s VALUES('1', 'Ghostbusters')", tablename)
 	insert, err := theDB.Query(query)
 	if err != nil {
 		panic(err.Error())
 	}
 	defer insert.Close()
-	log.Printf("Executed query %s to table %s successfully\n", query, newTableName)
+	log.Printf("Executed query %s to table %s successfully\n", query, tablename)
 }
 
 func getPosts(w http.ResponseWriter, r *http.Request) {
@@ -203,13 +231,77 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func createPost(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Creating post\n")
 	w.Header().Set("Content-Type", "application/json")
-	//	log.Printf("Preparing DB\n")
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	keyVal := make(map[string]string)
+	json.Unmarshal(body, &keyVal)
+	title := "'" + keyVal["title"] + "'"
+	log.Printf("body = " + string(body) + "\n")
+	log.Printf("id = " + keyVal["id"] + "\n")
+	log.Printf("title = " + keyVal["title"] + "\n")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	log.Printf("Preparing statement\n")
+	// stmt, err := db.Prepare("INSERT INTO " + tablename + "(title) VALUES(" + keyVal["title"] + ");")
+	stmt, err := db.Prepare("INSERT INTO " + tablename + "(title) VALUES(?);")
+	_, err = stmt.Exec(title)
+	// _, err = stmt.Exec()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	log.Printf("Prepared statement successfully\n")
+
+	// var responseText = "New post with title " + string(keyVal["title"]) + " was created"
+	var responseText = "New post with title " + title + " was created in database " + dbname + ", table " + tablename
+	fmt.Fprintf(w, responseText)
+	log.Printf(responseText)
+}
+
+func createPost3(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Creating post\n")
+	w.Header().Set("Content-Type", "application/json")
+	log.Printf("Preparing statement\n")
 	stmt, err := db.Prepare("INSERT INTO " + tablename + "(title) VALUES(?)")
 	if err != nil {
 		panic(err.Error())
 	}
-	log.Printf("Prepared DB successfully\n")
+	log.Printf("Prepared statement successfully\n")
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	keyVal := make(map[string]string)
+	json.Unmarshal(body, &keyVal)
+	title := keyVal["title"]
+	_, err = stmt.Exec(title)
+	log.Printf("body = " + string(body) + "\n")
+	log.Printf("id = " + keyVal["id"] + "\n")
+	log.Printf("title = " + keyVal["title"] + "\n")
+	if err != nil {
+		panic(err.Error())
+	}
+	var responseText = "New post with title " + string(keyVal["title"]) + " was created"
+	fmt.Fprintf(w, responseText)
+}
+
+func createPost2(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	//	log.Printf("Preparing DB\n")
+	// stmt, err := db.Prepare(fmt.Sprintf("INSERT INTO "+tablename+"(id, title) VALUES(%s, %s);", "1", "trustme"))
+	// stmt, err := db.Prepare(fmt.Sprintf("INSERT INTO "+tablename+" VALUES(%s, '%s');", "17", "jeans"))
+	stmt, err := db.Prepare("INSERT INTO " + tablename + " VALUES(9, 'patata');")
+	if err != nil {
+		panic(err.Error())
+	}
+	log.Printf("posted to DB successfully stmt %s\n", stmt)
+	//*
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err.Error())
@@ -225,11 +317,13 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 	var newPostReport = "new post " + strconv.Itoa(99) + " was created"
 	fmt.Fprintf(w, newPostReport)
 	log.Printf("created post\n")
+	//*/
 }
 func getPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	result, err := db.Query("SELECT id, title FROM "+tablename+" WHERE id = ?", params["id"])
+	// result, err := db.Query("SELECT id, title FROM "+tablename+" WHERE id = %s", params["id"])
 	if err != nil {
 		panic(err.Error())
 	}
@@ -242,7 +336,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.NewEncoder(w).Encode(post)
-	log.Printf("got post\n")
+	log.Printf("got post %s/%s (id %s)\n", post.Title, params["title"], params["id"])
 }
 func updatePost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
