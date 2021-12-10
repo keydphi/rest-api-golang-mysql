@@ -25,47 +25,25 @@ var db *sql.DB
 var err error
 
 const (
-	username  = "paulo"
-	password  = "pinkel"
-	hostname  = "127.0.0.1"
+	username = "pedro"
+	password = "polinesis"
+	//	hostname  = "127.0.0.1"
+	hostname  = "localhost"
 	port      = "3306"
-	dbname    = "neueDatabase"
+	dbname    = "newDatabase"
 	tablename = "postsTable11"
 )
 
 func main() {
-	/*
-		db, err = sql.Open("mysql", get_dsn(""))
-		if err != nil {
-			panic(err.Error())
-		}
-		defer db.Close()
-		log.Printf("Opened mysql DSN successfully\n")
 
-	*/
 	connectToDB()
 	createTableIfNotExists()
 
-	/*
-		query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s.%s (`%s` int(6) unsigned NOT NULL AUTO_INCREMENT, `%s` varchar(30) NOT NULL, PRIMARY KEY (`%s`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;", dbname, tablename, "id", "title", "id")
-		insert, err := db.Query(query)
-		if err != nil {
-			panic(err.Error())
-		}
-		//	defer insert.Close()
-		log.Printf("Executed query %s to table %s with %s successfully\n", query, tablename, insert)
-
-		//*/
-
-	//*
 	stmt, err := db.Prepare("INSERT INTO " + dbname + "." + tablename + "(title) VALUES(?)")
 	if err != nil {
-		//		panic(err.Error())
 		log.Printf("Error %s at Insert into table name %s at stmt %s", err, tablename, stmt)
-		//		createTable(db, dbname, tablename)
 		log.Printf("Table %s created DB\n", tablename)
 	}
-	//*/
 
 	//*
 	runAPI()
@@ -88,28 +66,8 @@ func runAPI() {
 
 }
 
-// func connectToDB(targetDbName string) {
 func connectToDB() {
-	/*
-		db, err = sql.Open("mysql", get_dsn(""))
-		if err != nil {
-			log.Printf("Error %s when opening DB %S", err, targetDbName)
-			return
-		}
-		contexti, cnclfnc := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cnclfnc()
-		//	perms, err := db.ExecContext(ctx, "GRANT ALL ON '"+targetDbName+"' TO '"+username+"'@'localhost';")
-		perms, err := db.ExecContext(contexti, "GRANT ALL PRIVILEGES ON *.* TO '"+username+"'@'localhost' IDENTIFIED BY '"+password+"';")
-		if err != nil {
-			log.Printf("Error %s when granting user permissions to %s on localhost\n", err, username)
-			return
-		}
-		log.Printf("permissions granted for %d\n", perms)
-		db.Close()
-
-	*/
 	db, err = sql.Open("mysql", get_dsn(dbname))
-	// db, err = sql.Open("mysql", get_dsn(""))
 	if err != nil {
 		log.Printf("Error %s when opening mysql dsn", err)
 		return
@@ -118,19 +76,23 @@ func connectToDB() {
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 
+	// create db
+	log.Printf("create db %s if not existing\n", dbname)
 	res, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+dbname)
 	if err != nil {
-		log.Printf("Error %s when cueureating DB\n", err)
+		log.Printf("Error %s when cueureating db %s\n", err, dbname)
 		return
 	}
 
 	no, err := res.RowsAffected()
 	if err != nil {
 		log.Printf("Error %s when fetching rows", err)
-		//		return
+		return
 	}
-	log.Printf("rows affected %d\n", no)
+	log.Printf("CREATE: rows affected %d\n", no)
 
+	// use db
+	log.Printf("use db %s\n", dbname)
 	res2, err := db.ExecContext(ctx, "USE "+dbname+";")
 	if err != nil {
 		log.Printf("Error %s when setting USE DB "+dbname+"\n", err)
@@ -140,26 +102,38 @@ func connectToDB() {
 	no2, err := res2.RowsAffected()
 	if err != nil {
 		log.Printf("Error %s when fetching rows", err)
-		//		return
 	}
-	log.Printf("rows affected %d\n", no2)
+	log.Printf("USE: rows affected %d\n", no2)
 
-	res3, err := db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON "+dbname+"."+tablename+" TO '"+username+"'@'"+hostname+"';")
+	// mysql privileges
+	log.Printf("granting privileges on db %s table %s\n", dbname, tablename)
+	/*
+		res3, err := db.ExecContext(ctx, "SHOW GRANTS;")
+		/*/
+	res3, err := db.ExecContext(ctx, "GRANT ALL ON "+dbname+"."+tablename+" TO '"+username+"'@'"+hostname+"' WITH GRANT OPTION;")
+	//*/
 	if err != nil {
-		log.Printf("Error %s when granting privileges\n", err)
+		log.Printf("Error %s when granting privileges on %s\n", err, dbname)
 		return
 	}
+	//	log.Printf("mysql result: %s", res3.LastInsertId().)
+
+	//	log.Printf("hello\n")
+
+	//lastInsertId, err := res3.LastInsertId()
+	//log.Printf("last command (id %s)\n", lastInsertId)
+
+	//	log.Printf("hello\n")
 
 	no3, err := res3.RowsAffected()
 	if err != nil {
 		log.Printf("Error %s when fetching rows", err)
-		//		return
 	}
-	log.Printf("rows affected %d\n", no3)
+	log.Printf("GRANT: rows affected %d\n", no3)
 
 	db.Close()
 
-	//	db, err = sql.Open("mysql", get_dsn(targetDbName))
+	log.Printf("open connection to db " + dbname + "\n")
 	db, err = sql.Open("mysql", get_dsn(dbname))
 	if err != nil {
 		log.Printf("Error %s when opening mysql dsn", err)
@@ -239,19 +213,20 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 	}
 	keyVal := make(map[string]string)
 	json.Unmarshal(body, &keyVal)
-	title := "'" + keyVal["title"] + "'"
+	// title := "'" + keyVal["title"] + "'"
+	title := keyVal["title"]
 	log.Printf("body = " + string(body) + "\n")
 	log.Printf("id = " + keyVal["id"] + "\n")
-	log.Printf("title = " + keyVal["title"] + "\n")
+	log.Printf("title = " + title + "\n")
 	if err != nil {
 		panic(err.Error())
 	}
 
 	log.Printf("Preparing statement\n")
-	// stmt, err := db.Prepare("INSERT INTO " + tablename + "(title) VALUES(" + keyVal["title"] + ");")
+	// stmt, err := db.Prepare("INSERT INTO " + tablename + "(title) VALUES(" + title + ");")
+	// _, err = stmt.Exec()
 	stmt, err := db.Prepare("INSERT INTO " + tablename + "(title) VALUES(?);")
 	_, err = stmt.Exec(title)
-	// _, err = stmt.Exec()
 	if err != nil {
 		panic(err.Error())
 	}

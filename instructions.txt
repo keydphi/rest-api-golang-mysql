@@ -1,0 +1,4 @@
+
+
+add new class
+    to package main (?) / registered module
