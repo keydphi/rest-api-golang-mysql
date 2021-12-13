@@ -1,4 +1,4 @@
-package main2
+package main
 
 import (
 	"fmt"
@@ -16,21 +16,21 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != "GET" {
-		http.Error(w, "Method is not supported.", http.StatusNotFound)
+		http.Error(w, "Only GET method is supported.", http.StatusNotFound)
 		return
 	}
 
 	fmt.Fprintf(w, "Hello Robert!")
 }
 
-func main() {
+func startForm() {
 
 	fileServer := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fileServer)
 	http.HandleFunc("/form", formHandler)
 	http.HandleFunc("/hello", helloHandler)
 
-	fmt.Printf("Starting server at port %d\n", port)
+	fmt.Printf("Starting server at port %s\n", port)
 	if err := http.ListenAndServe(string(":"+strconv.Itoa(portnumber)), nil); err != nil {
 		log.Fatal(err)
 	}

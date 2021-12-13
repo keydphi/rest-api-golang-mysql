@@ -36,6 +36,8 @@ const (
 
 func main() {
 
+	go startForm()
+
 	connectToDB()
 	createTableIfNotExists()
 
